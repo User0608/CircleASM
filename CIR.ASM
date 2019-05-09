@@ -1,12 +1,12 @@
 DATA SEGMENT
-	X1 DW 320 ;coordenada x centro
+	X1 DW 210 ;coordenada x centro
 	Y1 DW 240 ;coordenada x centro
 
 	X2 DW 420;coordenada y centro	
 	Y2 DW 240 ;coordenada y centro	
 	
 
-	RADIO DW 50;Radio ...
+	RADIO DW 100;Radio ...
 	X DW ?
 	Y DW ?
 	XC DW ?
@@ -36,9 +36,7 @@ INICIO:
 	INT 10h	
 
 
-	MOV RADIO,40
-	MOV XC,320	
-	MOV YC,240
+	MOV RADIO,60	
 	MOV COLOR,0AH
 	CALL DRAWING	
 
@@ -58,8 +56,11 @@ INICIO:
 
 	;pinta las figuras en la pantalla
 	DRAWING PROC NEAR
+	MOV AX,RADIO
+	MOV TEMPO,AX
+	CYCLE:	
 		MOV X,0
-		MOV AX,RADIO
+		MOV AX,TEMPO
 		MOV Y,AX
 	CALC:
 		CALL CALCULATE
@@ -67,12 +68,13 @@ INICIO:
 		SUB AX,X
 		CMP AX,1
 		JA CALC
+	DEC TEMPO
+	CMP TEMPO,1
+	JAE CYCLE
 	RET
 	DRAWING ENDP
 	;Calcula los puntos a pintar
 	CALCULATE PROC NEAR
-		INC X
-
 		MOV AX,X
 		MUL AX 			;X^2
 		MOV BX,AX
@@ -86,18 +88,32 @@ INICIO:
 		JBE BLOCK
 		DEC Y
 		BLOCK:
-		CALL PAINT	
-		PUSH Y
-		PUSH X
-		POP Y
-		POP X   
-		CALL PAINT
-		PUSH Y
-		PUSH X
-		POP Y
-		POP X   
+		CALL PERXY
+		CALL PERXY	
+
+		INC X 
 	RET
 	CALCULATE ENDP
+
+	PERXY PROC NEAR
+		MOV CX,X1
+		MOV XC,CX
+		MOV CX,Y1
+		MOV YC,CX
+		CALL PAINT
+
+		MOV CX,X2
+		MOV XC,CX
+		MOV CX,Y2
+		MOV YC,CX
+		CALL PAINT
+
+		PUSH Y
+		PUSH X
+		POP Y
+		POP X
+
+	PERXY ENDP
 	;Interpola los puntos y pinta en pantalla
 	PAINT PROC NEAR	
 		;I CUADRANTE
