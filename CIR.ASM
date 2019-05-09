@@ -1,19 +1,20 @@
 DATA SEGMENT
 	X1 DW 320 ;coordenada x centro
 	Y1 DW 240 ;coordenada x centro
-	R1 DW 50;Radio ...
 
 	X2 DW 420;coordenada y centro	
 	Y2 DW 240 ;coordenada y centro	
-	R2 DW 50;Radio ...
+	
 
-
+	RADIO DW 50;Radio ...
+	X DW ?
+	Y DW ?
+	XC DW ?
+	YC DW ?
+	MODE DB ?
+	COLOR DB ? ;Color ...
 	LASTKEY DW "5" 
 	TEMPO DW ?
-	HOR DW ?
-	VER DW ?
-	MODO DB ?
-	COLOR DB ? ;Color ...
 
 DATA ENDS
 
@@ -26,19 +27,20 @@ INICIO:
 	;Petición de modo de video 
 	MOV AH,0Fh	
 	INT 10h		
-	MOV MODO,AL 
+	MOV MODE,AL 
 
 	;http://ict.udlap.mx/people/oleg/docencia/Assembler/asm_interrup_10.html
-	;establece el modo de video 
+	;establece el modo de video 640x480
 	MOV AH,00h	
 	MOV AL,12h	
 	INT 10h	
 
-	MOV CX,X1
-	MOV DX,Y1
+
+	MOV RADIO,40
+	MOV XC,320	
+	MOV YC,240
 	MOV COLOR,0AH
-	CALL PUNTEAR
-		
+	CALL DRAWING	
 
 
 	;Espera una tecla
@@ -47,21 +49,91 @@ INICIO:
 
 	;Restablece el modo
 	MOV AH,00h	
-	MOV AL,MODO
+	MOV AL,MODE
 	INT 10h	
 
 	;Terminación de Programa con Código de Retorno
 	MOV AX,4C00h	
 	INT 21h
 
-	PUNTEAR PROC NEAR	
+	;pinta las figuras en la pantalla
+	DRAWING PROC NEAR
+		MOV X,0
+		MOV AX,RADIO
+		MOV Y,AX
+	CALC:
+		CALL CALCULATE
+		MOV AX,Y
+		SUB AX,X
+		CMP AX,1
+		JA CALC
+	RET
+	DRAWING ENDP
+	;Calcula los puntos a pintar
+	CALCULATE PROC NEAR
+		INC X
+
+		MOV AX,X
+		MUL AX 			;X^2
+		MOV BX,AX
+		MOV AX,Y
+		MUL AX 			;Y^2
+		ADD BX,AX       ;X^2+Y^2
+		MOV AX,RADIO 
+		MUL AX 			;R^2
+
+		CMP BX,CX
+		JBE BLOCK
+		DEC Y
+		BLOCK:
+		CALL PAINT	
+		PUSH Y
+		PUSH X
+		POP Y
+		POP X   
+		CALL PAINT
+		PUSH Y
+		PUSH X
+		POP Y
+		POP X   
+	RET
+	CALCULATE ENDP
+	;Interpola los puntos y pinta en pantalla
+	PAINT PROC NEAR	
+		;I CUADRANTE
+		MOV CX,XC
+		ADD CX,X
+		MOV DX,YC
+		ADD DX,Y
+		CALL POINTER			
+		;II CUADRANTE	
+		MOV CX,XC
+		SUB CX,X
+		MOV DX,YC
+		ADD DX,Y
+		CALL POINTER
+		;III CUADRANTE
+		MOV CX,XC
+		SUB CX,X
+		MOV DX,YC
+		SUB DX,Y
+		CALL POINTER
+		;IV CUADRANTE
+		MOV CX,XC
+		ADD CX,X
+		MOV DX,YC
+		SUB DX,Y
+		CALL POINTER
+	RET
+	PAINT ENDP
+	;pinta un punto en pantalla (cx,dx)
+	POINTER PROC NEAR	
 		MOV AH,0Ch		; Petición para escribir un punto
 		MOV AL,COLOR	; Color del pixel
 		MOV BH,00h		; Página
 		INT 10H			; Llamada al BIOS
 	RET
-	PUNTEAR ENDP
-
+	POINTER ENDP
 
 CODE ENDS
 
