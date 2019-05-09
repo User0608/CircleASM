@@ -82,7 +82,7 @@ INICIO:
 		MOV AX,RADIO 
 		MUL AX 			;R^2
 
-		CMP BX,CX
+		CMP BX,AX
 		JBE BLOCK
 		DEC Y
 		BLOCK:
