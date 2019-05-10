@@ -1,9 +1,11 @@
 DATA SEGMENT
-	X1 DW 210 ;coordenada x centro
+	X1 DW 340 ;coordenada x centro
 	Y1 DW 240 ;coordenada x centro
+	COLOR1 DB ? ;Color ...
 
-	X2 DW 420;coordenada y centro	
+	X2 DW 300;coordenada y centro	
 	Y2 DW 240 ;coordenada y centro	
+	COLOR2 DB ? ;Color ...
 	
 
 	RADIO DW 100;Radio ...
@@ -15,6 +17,7 @@ DATA SEGMENT
 	COLOR DB ? ;Color ...
 	LASTKEY DW "5" 
 	TEMPO DW ?
+	COL DB ? ;Color ...
 
 DATA ENDS
 
@@ -37,7 +40,8 @@ INICIO:
 
 
 	MOV RADIO,60	
-	MOV COLOR,0AH
+	MOV COLOR1,0AH
+	MOV COLOR2,0EH
 	CALL DRAWING	
 
 
@@ -68,6 +72,7 @@ INICIO:
 		SUB AX,X
 		CMP AX,1
 		JA CALC
+		CALL CALCULATE				
 	DEC TEMPO
 	CMP TEMPO,1
 	JAE CYCLE
@@ -100,12 +105,16 @@ INICIO:
 		MOV XC,CX
 		MOV CX,Y1
 		MOV YC,CX
+		MOV CL,COLOR1
+		MOV COLOR,CL
 		CALL PAINT
 
 		MOV CX,X2
 		MOV XC,CX
 		MOV CX,Y2
 		MOV YC,CX
+		MOV CL,COLOR2
+		MOV COLOR,CL
 		CALL PAINT
 
 		PUSH Y
@@ -120,34 +129,49 @@ INICIO:
 		MOV CX,XC
 		ADD CX,X
 		MOV DX,YC
-		ADD DX,Y
-		CALL POINTER			
+		ADD DX,Y			
+		CALL POINTER	
 		;II CUADRANTE	
 		MOV CX,XC
 		SUB CX,X
 		MOV DX,YC
-		ADD DX,Y
+		ADD DX,Y		
 		CALL POINTER
 		;III CUADRANTE
 		MOV CX,XC
 		SUB CX,X
 		MOV DX,YC
-		SUB DX,Y
+		SUB DX,Y		
 		CALL POINTER
 		;IV CUADRANTE
 		MOV CX,XC
 		ADD CX,X
 		MOV DX,YC
-		SUB DX,Y
+		SUB DX,Y		
 		CALL POINTER
 	RET
 	PAINT ENDP
 	;pinta un punto en pantalla (cx,dx)
 	POINTER PROC NEAR	
+
+		MOV AH,0DH
+		MOV BH,00h
+		INT 10H
+		CMP AL,00H
+		JNE CODEP		
+
 		MOV AH,0Ch		; Petición para escribir un punto
 		MOV AL,COLOR	; Color del pixel
 		MOV BH,00h		; Página
 		INT 10H			; Llamada al BIOS
+		JMP QUITX
+		CODEP:
+		MOV AH,0Ch		; Petición para escribir un punto
+		MOV AL,09H 	; Color del pixel
+		MOV BH,00h		; Página
+		INT 10H			; Llamada al BIOS
+		QUITX:
+
 	RET
 	POINTER ENDP
 
