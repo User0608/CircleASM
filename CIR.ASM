@@ -42,7 +42,12 @@ INICIO:
 	MOV RADIO,60	
 	MOV COLOR1,0AH
 	MOV COLOR2,0EH
-	CALL DRAWING	
+	CALL DRAWING
+
+	MOV AH,0 
+  	INT 16H	
+  	
+  	CALL BORRAR
 
 
 	;Espera una tecla
@@ -58,14 +63,20 @@ INICIO:
 	MOV AX,4C00h	
 	INT 21h
 
+		BUCLE PROC NEAR	
+
+
+
+		BUCLE ENDP
+
 	;pinta las figuras en la pantalla
 	DRAWING PROC NEAR
 	MOV AX,RADIO
-	MOV TEMPO,AX
-	CYCLE:	
+	;MOV TEMPO,AX
+	;CYCLE:	
 		MOV X,0
-		MOV AX,TEMPO
-		MOV Y,AX
+	;	MOV AX,TEMPO
+		MOV Y,AX		
 	CALC:
 		CALL CALCULATE
 		MOV AX,Y
@@ -73,9 +84,9 @@ INICIO:
 		CMP AX,1
 		JA CALC
 		CALL CALCULATE				
-	DEC TEMPO
-	CMP TEMPO,1
-	JAE CYCLE
+	;DEC TEMPO
+	;CMP TEMPO,1
+	;JAE CYCLE
 	RET
 	DRAWING ENDP
 	;Calcula los puntos a pintar
@@ -100,7 +111,7 @@ INICIO:
 	RET
 	CALCULATE ENDP
 
-	PERXY PROC NEAR
+	PERXY PROC NEAR ; PINTA E INVIERTE CORDENDAS
 		MOV CX,X1
 		MOV XC,CX
 		MOV CX,Y1
@@ -154,26 +165,37 @@ INICIO:
 	;pinta un punto en pantalla (cx,dx)
 	POINTER PROC NEAR	
 
-		MOV AH,0DH
-		MOV BH,00h
-		INT 10H
-		CMP AL,00H
-		JNE CODEP		
+		;MOV AH,0DH
+		;MOV BH,00h
+		;INT 10H
+		;CMP AL,00H
+		;JNE CODEP		
 
 		MOV AH,0Ch		; Petición para escribir un punto
 		MOV AL,COLOR	; Color del pixel
 		MOV BH,00h		; Página
 		INT 10H			; Llamada al BIOS
-		JMP QUITX
-		CODEP:
-		MOV AH,0Ch		; Petición para escribir un punto
-		MOV AL,09H 	; Color del pixel
-		MOV BH,00h		; Página
-		INT 10H			; Llamada al BIOS
-		QUITX:
+		;JMP QUITX
+		;CODEP:
+		;MOV AH,0Ch		; Petición para escribir un punto
+		;MOV AL,09H 	; Color del pixel
+		;MOV BH,00h		; Página
+		;INT 10H			; Llamada al BIOS
+		;QUITX:
 
 	RET
 	POINTER ENDP
+
+	BORRAR PROC NEAR		
+		MOV CL,COLOR1
+	PUSH CX         ; Ya que en GRAFICAR se usan todos los registros
+		MOV COLOR1,00h
+		CALL DRAWING
+	POP CX
+		MOV COLOR1,CL
+	RET
+	BORRAR ENDP
+
 
 CODE ENDS
 
