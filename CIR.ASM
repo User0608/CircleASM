@@ -1,20 +1,23 @@
 DATA SEGMENT
-	X1 DW 210 ;coordenada x centro
+	X1 DW 340 ;coordenada x centro
 	Y1 DW 240 ;coordenada x centro
+	COLOR1 DB 0AH ;Color ...
 
-	X2 DW 420;coordenada y centro	
+	X2 DW 300;coordenada y centro	
 	Y2 DW 240 ;coordenada y centro	
+	COLOR2 DB 0EH ;Color ...
 	
 
-	RADIO DW 100;Radio ...
+	RADIO DW 10;Radio ...
 	X DW ?
 	Y DW ?
 	XC DW ?
 	YC DW ?
 	MODE DB ?
 	COLOR DB ? ;Color ...
-	LASTKEY DW "5" 
+	LASTKEY DB "5" 
 	TEMPO DW ?
+	COL DB ? ;Color ...
 
 DATA ENDS
 
@@ -34,11 +37,8 @@ INICIO:
 	MOV AH,00h	
 	MOV AL,12h	
 	INT 10h	
-
-
-	MOV RADIO,60	
-	MOV COLOR,0AH
-	CALL DRAWING	
+  	
+  	CALL BUCLE
 
 
 	;Espera una tecla
@@ -53,24 +53,245 @@ INICIO:
 	;Terminación de Programa con Código de Retorno
 	MOV AX,4C00h	
 	INT 21h
+		BUCLE PROC NEAR	
+		HEAD:
+				CALL DRAWING
+				CALL LISTEN  
+				JNZ E1		
+				MOV AL,LASTKEY 
+				
+			E1:
+				CMP AL, "1"
+				JNZ E2
+				CALL MOV_SO
+				JMP HEAD
+			E2:	
+				CMP AL, "2"
+				JNZ E3
+				CALL MOV_S	
+				JMP HEAD
+			E3:	
+				CMP AL, "3"
+				JNZ E4
+				CALL MOV_SE
+				JMP HEAD
+			E4:	
+				CMP AL, "4"
+				JNZ E5
+				CALL MOV_O
+				JMP HEAD
+			E5:	
+				CMP AL, "5"
+				JNZ E6
+				CALL DONTMOVE
+				JMP HEAD
+			E6:
+				CMP AL, "6"
+				JNZ E7
+				CALL MOV_E
+				JMP	HEAD
+			E7:	
+				CMP AL, "7"
+				JNZ E8
+				CALL MOV_NO	
+				JMP HEAD
+			E8:	
+				CMP AL, "8"
+				JNZ E9
+				CALL MOV_N	
+				JMP HEAD
+			E9:	
+				CMP AL, "9"
+				JNZ QUIT
+				CALL MOV_NE
+				JMP HEAD			
+			QUIT:	
+				CMP AL, "q"
+				JNZ BUCLE
+		RET
+		BUCLE ENDP
+
+	; Si ZF está prendido quiere decir que el buffer está vacío.		
+	LISTEN  PROC NEAR
+	MOV AH,06h     ; Peticion directa a la consola
+ 	MOV DL,0FFh    ; Entrada de teclado
+ 	INT 21h        ; Interrupcion que llama al DOS
+	RET
+	LISTEN ENDP	
+
+
+MOV_SO  PROC NEAR ;Movimiento al sur oeste
+	MOV AX,X1
+	SUB AX,RADIO
+	JNZ NO1
+	CALL MOV_SE
+	RET
+NO1:
+	MOV AX,Y1
+	ADD AX,RADIO
+	SUB AX,480
+	JNZ	NO2
+	CALL MOV_NO
+	RET
+NO2:
+	CALL CLEAN
+	INC Y1
+	DEC X1
+	MOV LASTKEY ,"1"
+	RET
+MOV_SO ENDP
+
+MOV_S PROC NEAR ; Movimiento al sur 
+	MOV AX,Y1
+	ADD AX,RADIO
+	SUB AX,480
+	JNZ NO3
+	CALL MOV_N
+	RET
+NO3:
+	CALL CLEAN
+	INC Y1
+	MOV LASTKEY ,"2"
+	RET
+MOV_S ENDP
+
+
+MOV_SE PROC NEAR
+	MOV AX,Y1
+	ADD AX,RADIO
+	SUB AX,480
+	JNZ NO4
+	CALL MOV_NE
+	RET
+NO4:
+	MOV AX,X1
+	ADD AX,RADIO
+	SUB AX,640
+	JNZ NO5
+	CALL MOV_SO
+	RET
+NO5:
+	CALL CLEAN
+	INC Y1
+	INC X1
+	MOV LASTKEY ,"3"
+	RET
+MOV_SE ENDP
+
+MOV_O PROC NEAR
+	MOV AX,X1
+	SUB AX,RADIO
+	JNZ NO6
+	CALL MOV_E
+	RET
+NO6:
+	CALL CLEAN
+	DEC X1
+	MOV LASTKEY ,"4"
+	RET
+MOV_O ENDP
+
+
+MOV_E PROC NEAR
+	MOV AX,X1
+	ADD AX,RADIO
+	SUB AX,640
+	JNZ NO7
+	CALL MOV_O
+	RET
+NO7:
+	CALL CLEAN
+	INC X1
+	MOV LASTKEY ,"6"
+	RET
+MOV_E ENDP
+
+MOV_NO PROC NEAR
+	MOV AX,X1
+	SUB AX,RADIO
+	JNZ NO8
+	CALL MOV_NE
+	RET
+NO8:
+	MOV AX,Y1
+	SUB AX,RADIO
+	JNZ NO9
+	CALL MOV_SO
+	RET
+NO9:
+	CALL CLEAN
+	DEC Y1
+	DEC X1
+	MOV LASTKEY ,"7"
+	RET
+MOV_NO ENDP
+
+MOV_N PROC NEAR
+	MOV AX,Y1
+	SUB AX,RADIO
+	JNZ NO10
+	CALL MOV_S
+	RET
+NO10:
+	CALL CLEAN
+	DEC Y1
+	MOV LASTKEY ,"8"
+	RET
+MOV_N ENDP
+
+MOV_NE PROC NEAR
+	MOV AX,X1
+	ADD AX,RADIO
+	SUB AX,640
+	JNZ NO11
+	CALL MOV_NO
+	RET
+NO11:
+	MOV AX,Y1
+	SUB AX,RADIO
+	JNZ NO12
+	CALL MOV_SE
+	RET
+NO12:
+	CALL CLEAN
+	DEC Y1
+	INC X1
+	MOV LASTKEY ,"9"
+	RET
+MOV_NE ENDP
+
+DONTMOVE PROC NEAR	 ; PAUSA
+	MOV AH,00h
+	INT 16h
+	MOV LASTKEY,AL
+	RET
+DONTMOVE ENDP
+
 
 	;pinta las figuras en la pantalla
 	DRAWING PROC NEAR
 	MOV AX,RADIO
-	MOV TEMPO,AX
-	CYCLE:	
+;
+		;MOV TEMPO,AX ;Para activar el pintado des comentar 
+		;CYCLE:	
+;
 		MOV X,0
-		MOV AX,TEMPO
-		MOV Y,AX
+;
+	;	MOV AX,TEMPO
+;
+		MOV Y,AX		
 	CALC:
 		CALL CALCULATE
 		MOV AX,Y
 		SUB AX,X
 		CMP AX,1
 		JA CALC
-	DEC TEMPO
-	CMP TEMPO,1
-	JAE CYCLE
+		CALL CALCULATE				
+;
+	;DEC TEMPO
+	;CMP TEMPO,1
+	;JAE CYCLE
+;
 	RET
 	DRAWING ENDP
 	;Calcula los puntos a pintar
@@ -95,17 +316,21 @@ INICIO:
 	RET
 	CALCULATE ENDP
 
-	PERXY PROC NEAR
+	PERXY PROC NEAR ; PINTA E INVIERTE CORDENDAS
 		MOV CX,X1
 		MOV XC,CX
 		MOV CX,Y1
 		MOV YC,CX
+		MOV CL,COLOR1
+		MOV COLOR,CL
 		CALL PAINT
 
 		MOV CX,X2
 		MOV XC,CX
 		MOV CX,Y2
 		MOV YC,CX
+		MOV CL,COLOR2
+		MOV COLOR,CL
 		CALL PAINT
 
 		PUSH Y
@@ -120,28 +345,29 @@ INICIO:
 		MOV CX,XC
 		ADD CX,X
 		MOV DX,YC
-		ADD DX,Y
-		CALL POINTER			
+		ADD DX,Y			
+		CALL POINTER	
 		;II CUADRANTE	
 		MOV CX,XC
 		SUB CX,X
 		MOV DX,YC
-		ADD DX,Y
+		ADD DX,Y		
 		CALL POINTER
 		;III CUADRANTE
 		MOV CX,XC
 		SUB CX,X
 		MOV DX,YC
-		SUB DX,Y
+		SUB DX,Y		
 		CALL POINTER
 		;IV CUADRANTE
 		MOV CX,XC
 		ADD CX,X
 		MOV DX,YC
-		SUB DX,Y
+		SUB DX,Y		
 		CALL POINTER
 	RET
 	PAINT ENDP
+
 	;pinta un punto en pantalla (cx,dx)
 	POINTER PROC NEAR	
 		MOV AH,0Ch		; Petición para escribir un punto
@@ -150,6 +376,17 @@ INICIO:
 		INT 10H			; Llamada al BIOS
 	RET
 	POINTER ENDP
+
+	CLEAN PROC NEAR		
+			MOV CL,COLOR1
+		PUSH CX         ; Ya que en GRAFICAR se usan todos los registros
+			MOV COLOR1,00h
+			CALL DRAWING
+		POP CX
+			MOV COLOR1,CL
+	RET
+	CLEAN ENDP
+
 
 CODE ENDS
 
