@@ -1,12 +1,24 @@
 DATA SEGMENT
+	CORX1 DB "INGRESE X1:","$"
+	CORY1 DB "INGRESE Y1:","$"
+
+	CORX2 DB "INGRESE X2:","$"
+	CORY2 DB "INGRESE Y2:","$"
+
+	TAMRAD DB "INGRESE RADIO:","$"
+
+	ETIQUETA LABEL  BYTE
+			MAXIMO	 DB 20
+			LONGITUD DB ?
+			DATO	 DB 20 DUP("$") 
+
 	X1 DW 340 ;coordenada x centro
 	Y1 DW 240 ;coordenada x centro
 	COLOR1 DB 0AH ;Color ...
 
 	X2 DW 300;coordenada y centro	
 	Y2 DW 240 ;coordenada y centro	
-	COLOR2 DB 0EH ;Color ...
-	
+	COLOR2 DB 0EH ;Color ...	
 
 	RADIO DW 10;Radio ...
 	X DW ?
@@ -30,7 +42,46 @@ INICIO:
 	;Petición de modo de video 
 	MOV AH,0Fh	
 	INT 10h		
-	MOV MODE,AL 
+	MOV MODE,AL
+
+	CALL RECORRE	
+
+	MOV DX,0000H
+	CALL POSICION
+	LEA DX,TAMRAD
+	CALL MUESTRA
+	CALL INGRESO
+	MOV RADIO,BX
+
+	MOV DX,0200H
+	CALL POSICION
+	LEA DX,CORX1
+	CALL MUESTRA
+	CALL INGRESO
+	MOV X1,BX
+
+	MOV DX,0300H
+	CALL POSICION
+	LEA DX,CORY1
+	CALL MUESTRA
+	CALL INGRESO
+	MOV Y1,BX
+
+
+	MOV DX,0400H
+	CALL POSICION
+	LEA DX,CORX2
+	CALL MUESTRA
+	CALL INGRESO
+	MOV X2,BX
+
+	MOV DX,0500H
+	CALL POSICION
+	LEA DX,CORY2
+	CALL MUESTRA
+	CALL INGRESO
+	MOV Y2,BX
+
 
 	;http://ict.udlap.mx/people/oleg/docencia/Assembler/asm_interrup_10.html
 	;establece el modo de video 640x480
@@ -39,8 +90,6 @@ INICIO:
 	INT 10h	
   	
   	CALL BUCLE
-
-
 	;Espera una tecla
 	MOV AH,0 
   	INT 16H
@@ -53,7 +102,57 @@ INICIO:
 	;Terminación de Programa con Código de Retorno
 	MOV AX,4C00h	
 	INT 21h
-		BUCLE PROC NEAR	
+
+	POSICION PROC NEAR
+		MOV AH,02H
+		MOV BH,00
+		INT 10H
+		RET
+	POSICION ENDP
+
+	MUESTRA PROC NEAR
+		MOV AH,09H
+		INT 21H
+		RET
+	MUESTRA ENDP
+
+	INGRESO PROC NEAR ; devuelve un numero den bx
+		MOV AH,0AH
+		LEA DX,ETIQUETA
+		INT 21H		
+
+		MOV CX,0
+		MOV BX,0
+		
+		MOV CL,LONGITUD
+		MOV DI,CX		
+		NUM:
+		MOV DX,0
+			MOV AX,0AH
+			DEC DI
+			MOV DL,DATO[DI]
+			SUB DL,30H
+		PUSH DX 
+			MUL BX	
+		POP DX	
+			ADD DX,AX
+			ADD BX,DX
+		LOOP NUM
+	RET
+	INGRESO ENDP
+
+	RECORRE PROC NEAR
+		;interrupción de recorrido de pantalla
+		MOV AX,0600h	
+		MOV BH,07h	; atributo de color
+		MOV CX,0000h	; posición inicial	
+		MOV DX,184fh	
+		INT 10h	
+		RET
+	RECORRE ENDP
+
+
+	BUCLE PROC NEAR	
 		HEAD:
 				CALL DRAWING
 				CALL LISTEN  
@@ -109,7 +208,7 @@ INICIO:
 				CMP AL, "q"
 				JNZ BUCLE
 		RET
-		BUCLE ENDP
+	BUCLE ENDP
 
 	; Si ZF está prendido quiere decir que el buffer está vacío.		
 	LISTEN  PROC NEAR
@@ -387,11 +486,10 @@ DONTMOVE ENDP
 	RET
 	CLEAN ENDP
 
-
 CODE ENDS
 
 PILA SEGMENT STACK
-       DB 900 DUP(?)
+       DB 4000 DUP(?)
 PILA ENDS
 
 END INICIO    
