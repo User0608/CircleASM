@@ -7,11 +7,10 @@ DATA SEGMENT
 
 	TAMRAD DB "INGRESE RADIO:","$"
 
-	ETIQUETA LABEL  BYTE
-			MAXIMO	 DB 20
-			LONGITUD DB ?
-			DATO	 DB 20 DUP("$") 
+	BUFFER  db 8
+	        db 9 dup(00)
 
+	
 	X1 DW 340 ;coordenada x centro
 	Y1 DW 240 ;coordenada x centro
 	COLOR1 DB 0AH ;Color ...
@@ -20,7 +19,7 @@ DATA SEGMENT
 	Y2 DW 240 ;coordenada y centro	
 	COLOR2 DB 0EH ;Color ...	
 
-	RADIO DW 10;Radio ...
+	RADIO DW 25;Radio ...
 	X DW ?
 	Y DW ?
 	XC DW ?
@@ -46,41 +45,15 @@ INICIO:
 
 	CALL RECORRE	
 
-	MOV DX,0000H
-	CALL POSICION
-	LEA DX,TAMRAD
-	CALL MUESTRA
-	CALL INGRESO
-	MOV RADIO,BX
-
-	MOV DX,0200H
-	CALL POSICION
-	LEA DX,CORX1
-	CALL MUESTRA
-	CALL INGRESO
-	MOV X1,BX
-
-	MOV DX,0300H
-	CALL POSICION
-	LEA DX,CORY1
-	CALL MUESTRA
-	CALL INGRESO
-	MOV Y1,BX
+	;MOV DX,0000H
+	;CALL POSICION
+	;LEA DX,TAMRAD
+	;CALL MUESTRA
+	;CALL INGRESO
+	;MOV RADIO,DX
 
 
-	MOV DX,0400H
-	CALL POSICION
-	LEA DX,CORX2
-	CALL MUESTRA
-	CALL INGRESO
-	MOV X2,BX
-
-	MOV DX,0500H
-	CALL POSICION
-	LEA DX,CORY2
-	CALL MUESTRA
-	CALL INGRESO
-	MOV Y2,BX
+	
 
 
 	;http://ict.udlap.mx/people/oleg/docencia/Assembler/asm_interrup_10.html
@@ -116,28 +89,24 @@ INICIO:
 		RET
 	MUESTRA ENDP
 
-	INGRESO PROC NEAR ; devuelve un numero den bx
-		MOV AH,0AH
-		LEA DX,ETIQUETA
-		INT 21H		
-
-		MOV CX,0
+	INGRESO PROC NEAR ; devuelve un numero den bx		
+		MOV AH, 0AH
+		MOV DX, OFFSET BUFFER	
+		INT 21H
+		MOV AH,0
 		MOV BX,0
-		
-		MOV CL,LONGITUD
-		MOV DI,CX		
-		NUM:
-		MOV DX,0
-			MOV AX,0AH
-			DEC DI
-			MOV DL,DATO[DI]
-			SUB DL,30H
-		PUSH DX 
-			MUL BX	
-		POP DX	
-			ADD DX,AX
-			ADD BX,DX
-		LOOP NUM
+		MOV CX,AX				
+		ADD DI,1
+		LOP:
+			INC DI
+			MOV AL,[BUFFER+DI]
+			SUB AL,30H
+			MOV BL,AL
+			MOV AL,1O
+			MUL DL
+			MOV DX,AX
+			ADD DX,BX
+		LOOP LOP
 	RET
 	INGRESO ENDP
 
@@ -157,8 +126,7 @@ INICIO:
 				CALL DRAWING
 				CALL LISTEN  
 				JNZ E1		
-				MOV AL,LASTKEY 
-				
+				MOV AL,LASTKEY 				
 			E1:
 				CMP AL, "1"
 				JNZ E2
@@ -201,8 +169,23 @@ INICIO:
 				JMP HEAD
 			E9:	
 				CMP AL, "9"
-				JNZ QUIT
+				JNZ E10
 				CALL MOV_NE
+				JMP HEAD
+			E10:
+				CMP AL,"+"
+				JNZ E11
+				CALL INCREASE
+				JMP HEAD
+			E11:
+				CMP AL,"-"
+				JNZ CAMBIARC
+				CALL DECREASE
+				JMP HEAD			
+			CAMBIARC:
+				CMP AL,"0"
+				JNZ QUIT
+				CALL CCOLOR
 				JMP HEAD			
 			QUIT:	
 				CMP AL, "q"
@@ -217,7 +200,44 @@ INICIO:
  	INT 21h        ; Interrupcion que llama al DOS
 	RET
 	LISTEN ENDP	
+INCREASE PROC NEAR
+	CALL CLEAN
+	MOV AX,X1
+	ADD AX,RADIO
+	SUB AX,640
+	JZ DONTINC
+	MOV AX,X1
+	SUB AX,RADIO
+	JZ DONTINC
+	MOV AX,Y1
+	SUB AX,RADIO
+	JZ DONTINC
+	MOV AX,Y1
+	ADD AX,RADIO
+	SUB AX,480
+	JZ DONTINC
+	INC RADIO
+	; Si no colisiona al crecer, crece
+DONTINC:
+	RET
+INCREASE ENDP
 
+DECREASE PROC NEAR
+	CALL CLEAN
+	CMP RADIO,10
+	JE DONTDEC
+	DEC RADIO
+	; Si no es diminuto puede seguir decreciendo
+DONTDEC:
+	RET
+DECREASE ENDP	
+
+CCOLOR PROC NEAR
+	ADD COLOR1,27
+	ADD COLOR2,27
+	;MOV LAST,"5" Que se detenga al cambiar de color
+	RET
+CCOLOR ENDP
 
 MOV_SO  PROC NEAR ;Movimiento al sur oeste
 	MOV AX,X1
@@ -478,11 +498,14 @@ DONTMOVE ENDP
 
 	CLEAN PROC NEAR		
 			MOV CL,COLOR1
+			MOV CH,COLOR2
 		PUSH CX         ; Ya que en GRAFICAR se usan todos los registros
 			MOV COLOR1,00h
+			MOV COLOR2,00H
 			CALL DRAWING
 		POP CX
 			MOV COLOR1,CL
+			MOV COLOR2,CH
 	RET
 	CLEAN ENDP
 
