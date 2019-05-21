@@ -1,35 +1,37 @@
 DATA SEGMENT
-	CORX1 DB "INGRESE X1:","$"
-	CORY1 DB "INGRESE Y1:","$"
 
-	CORX2 DB "INGRESE X2:","$"
-	CORY2 DB "INGRESE Y2:","$"
+	UNI DB "UNIVERSIDAD NACIONAL DE TRUJILLO","$"
+	ING DB "INGENIERIA DE SISTEMAS","$" 	
+	VALLE DB "VALLE JEQUETEPEQUE","$"
 
-	TAMRAD DB "INGRESE RADIO:","$"
+	CORX1 DB "X1:","$"
+	CORY1 DB "Y1:","$"
 
-	BUFFER  db 8
-	        db 9 dup(00)
+	CORX2 DB "X2:","$"
+	CORY2 DB "Y2:","$"
 
-	
-	X1 DW 340 ;coordenada x centro
-	Y1 DW 240 ;coordenada x centro
-	COLOR1 DB 0AH ;Color ...
+	TAMRAD DB "RADIO:","$"
 
-	X2 DW 300;coordenada y centro	
-	Y2 DW 240 ;coordenada y centro	
-	COLOR2 DB 0EH ;Color ...	
+	BUFFER  DB 8			
+	        DB 9 dup("$")
 
-	RADIO DW 25;Radio ...
+	X1 DW 340 
+	Y1 DW 240 
+	COLOR1 DB 0AH 
+
+	X2 DW 300	
+	Y2 DW 240
+	COLOR2 DB 0EH
+
+	RADIO DW 25
 	X DW ?
 	Y DW ?
 	XC DW ?
 	YC DW ?
 	MODE DB ?
-	COLOR DB ? ;Color ...
-	LASTKEY DB "5" 
+	COLOR DB ?
+	LASTKEY DB "5" 	
 	TEMPO DW ?
-	COL DB ? ;Color ...
-
 DATA ENDS
 
 CODE SEGMENT
@@ -43,88 +45,140 @@ INICIO:
 	INT 10h		
 	MOV MODE,AL
 
-	CALL RECORRE	
+	CALL RECORRE
+	CALL BIENBE	
 
-	;MOV DX,0000H
-	;CALL POSICION
-	;LEA DX,TAMRAD
-	;CALL MUESTRA
-	;CALL INGRESO
-	;MOV RADIO,DX
+	MOV DX,0500H
+	CALL POSICION
+	LEA DX,TAMRAD
+	CALL MUESTRA
+	CALL INGRESO
+	MOV RADIO,DX
 
+	MOV DX,0600H
+	CALL POSICION
+	LEA DX,CORX1
+	CALL MUESTRA
+	CALL INGRESO
+	MOV X1,DX
 
-	;http://ict.udlap.mx/people/oleg/docencia/Assembler/asm_interrup_10.html
-	;establece el modo de video 640x480
+	MOV DX,0700H
+	CALL POSICION
+	LEA DX,CORY1
+	CALL MUESTRA
+	CALL INGRESO
+	MOV Y1,DX
+
+	MOV DX,0610H
+	CALL POSICION
+	LEA DX,CORX2
+	CALL MUESTRA
+	CALL INGRESO
+	MOV X2,DX
+
+	MOV DX,0710H
+	CALL POSICION
+	LEA DX,CORY2
+	CALL MUESTRA
+	CALL INGRESO
+	MOV Y2,DX
+	
+	MOV AH,0 
+  	INT 16H
+
 	MOV AH,00h	
 	MOV AL,12h	
 	INT 10h	
 	
   	CALL BUCLE
 
-	;Espera una tecla
 	MOV AH,0 
   	INT 16H
 
-	;Restablece el modo
 	MOV AH,00h	
 	MOV AL,MODE
 	INT 10h	
 
-	;Terminación de Programa con Código de Retorno
 	MOV AX,4C00h	
 	INT 21h
+
+	BIENBE PROC NEAR
+	MOV DX,0015H
+	CALL POSICION
+	LEA DX,UNI
+	CALL MUESTRA
+
+	MOV DX,0119H
+	CALL POSICION
+	LEA DX,ING
+	CALL MUESTRA
+
+	MOV DX,021BH
+	CALL POSICION
+	LEA DX,VALLE
+	CALL MUESTRA
+	RET
+	BIENBE ENDP
 
 	POSICION PROC NEAR
 		MOV AH,02H
 		MOV BH,00
 		INT 10H
-		RET
+	RET
 	POSICION ENDP
 
 	MUESTRA PROC NEAR
 		MOV AH,09H
 		INT 21H
-		RET
+	RET
 	MUESTRA ENDP
 
 	INGRESO PROC NEAR ; devuelve un numero den bx		
 		MOV AH, 0AH
-		MOV DX, OFFSET BUFFER	
+		LEA DX,BUFFER	
 		INT 21H
-		MOV AH,0
-		MOV BX,0
-		MOV CX,AX				
-		ADD DI,1
-		LOP:
-			INC DI
-			MOV AL,[BUFFER+DI]
-			SUB AL,30H
-			MOV BL,AL
-			MOV AL,1O
-			MUL DL
-			MOV DX,AX
-			ADD DX,BX
-		LOOP LOP
+
+		MOV DX,0
+		MOV CX,0
+
+		MOV DL,BUFFER[2]			
+		SUB DL,48		
+
+		MOV CL,BUFFER[3]		
+		SUB CL,48
+		JL SALIDA
+		MOV AX,10 
+		MUL DX
+		MOV DX,AX
+		ADD DX,CX
+
+		MOV CL,BUFFER[4]	
+		SUB CL,48
+		JL SALIDA
+		MOV AX,10 
+		MUL DX
+		MOV DX,AX
+		ADD DX,CX
+
+	SALIDA:
 	RET
 	INGRESO ENDP
 
 	RECORRE PROC NEAR
-		;interrupción de recorrido de pantalla
 		MOV AX,0600h	
-		MOV BH,07h	; atributo de color
-		MOV CX,0000h	; posición inicial	
+		MOV BH,07h	
+		MOV CX,0000h	
 		MOV DX,184fh	
 		INT 10h	
-		RET
+	RET
 	RECORRE ENDP
 
-
 	BUCLE PROC NEAR	
-		HEAD:
+		HEAD:				
 				CALL DRAWING
-				CALL LISTEN  
-				JNZ E1		
-				MOV AL,LASTKEY 				
+				CALL LISTEN 			
+				JNZ E1
+				MOV AL,LASTKEY				
 			E1:
 				CMP AL, "1"
 				JNZ E2
@@ -191,13 +245,13 @@ INICIO:
 		RET
 	BUCLE ENDP
 
-	; Si ZF está prendido quiere decir que el buffer está vacío.		
-	LISTEN  PROC NEAR
-	MOV AH,06h     ; Peticion directa a la consola
- 	MOV DL,0FFh    ; Entrada de teclado
- 	INT 21h        ; Interrupcion que llama al DOS
+LISTEN  PROC NEAR
+	MOV AH,06h    
+ 	MOV DL,0FFh   
+ 	INT 21h        
 	RET
-	LISTEN ENDP	
+LISTEN ENDP	
+
 INCREASE PROC NEAR
 	CALL CLEAN
 	MOV AX,X1
@@ -215,7 +269,6 @@ INCREASE PROC NEAR
 	SUB AX,480
 	JZ DONTINC
 	INC RADIO
-	; Si no colisiona al crecer, crece
 DONTINC:
 	RET
 INCREASE ENDP
@@ -225,7 +278,6 @@ DECREASE PROC NEAR
 	CMP RADIO,10
 	JE DONTDEC
 	DEC RADIO
-	; Si no es diminuto puede seguir decreciendo
 DONTDEC:
 	RET
 DECREASE ENDP	
@@ -233,11 +285,10 @@ DECREASE ENDP
 CCOLOR PROC NEAR
 	ADD COLOR1,27
 	ADD COLOR2,27
-	;MOV LAST,"5" Que se detenga al cambiar de color
 	RET
 CCOLOR ENDP
 
-MOV_SO  PROC NEAR ;Movimiento al sur oeste
+MOV_SO  PROC NEAR 
 	MOV AX,X1
 	SUB AX,RADIO
 	JNZ NO1
@@ -258,7 +309,7 @@ NO2:
 	RET
 MOV_SO ENDP
 
-MOV_S PROC NEAR ; Movimiento al sur 
+MOV_S PROC NEAR 
 	MOV AX,Y1
 	ADD AX,RADIO
 	SUB AX,480
@@ -377,25 +428,15 @@ NO12:
 	RET
 MOV_NE ENDP
 
-DONTMOVE PROC NEAR	 ; PAUSA
+DONTMOVE PROC NEAR
 	MOV AH,00h
 	INT 16h
 	MOV LASTKEY,AL
 	RET
 DONTMOVE ENDP
-
-	;pinta las figuras en la pantalla
 	DRAWING PROC NEAR
-	MOV AX,RADIO
-
-		;MOV TEMPO,AX ;Para activar el pintado des comentar 
-		;CYCLE:	
-;
+		MOV AX,RADIO
 		MOV X,0
-;
-	;	MOV AX,TEMPO
-;
-
 		MOV Y,AX		
 	CALC:
 		CALL CALCULATE
@@ -404,15 +445,9 @@ DONTMOVE ENDP
 		CMP AX,1
 		JA CALC
 		CALL CALCULATE				
-;
-	;DEC TEMPO
-	;CMP TEMPO,1
-	;JAE CYCLE
-;
-
 	RET
 	DRAWING ENDP
-	;Calcula los puntos a pintar
+	
 	CALCULATE PROC NEAR
 		MOV AX,X
 		MUL AX 			;X^2
@@ -434,7 +469,7 @@ DONTMOVE ENDP
 	RET
 	CALCULATE ENDP
 
-	PERXY PROC NEAR ; PINTA E INVIERTE CORDENDAS
+	PERXY PROC NEAR
 		MOV CX,X1
 		MOV XC,CX
 		MOV CX,Y1
@@ -456,8 +491,7 @@ DONTMOVE ENDP
 		POP Y
 		POP X
 
-	PERXY ENDP
-	;Interpola los puntos y pinta en pantalla
+	PERXY ENDP	
 	PAINT PROC NEAR	
 		;I CUADRANTE
 		MOV CX,XC
@@ -486,34 +520,18 @@ DONTMOVE ENDP
 	RET
 	PAINT ENDP
 
-	;pinta un punto en pantalla (cx,dx)
-	POINTER PROC NEAR	
-
-		;MOV AH,0DH
-		;MOV BH,00h
-		;INT 10H
-		;CMP AL,00H
-		;JNE CODEP		
-
-		MOV AH,0Ch		; Petición para escribir un punto
-		MOV AL,COLOR	; Color del pixel
-		MOV BH,00h		; Página
-		INT 10H			; Llamada al BIOS
-		;JMP QUITX
-		;CODEP:
-		;MOV AH,0Ch		; Petición para escribir un punto
-		;MOV AL,09H 	; Color del pixel
-		;MOV BH,00h		; Página
-		;INT 10H			; Llamada al BIOS
-		;QUITX:
-
+	POINTER PROC NEAR		
+		MOV AH,0Ch
+		MOV AL,COLOR	
+		MOV BH,00h		
+		INT 10H			
 	RET
 	POINTER ENDP
 
 	CLEAN PROC NEAR		
 			MOV CL,COLOR1
 			MOV CH,COLOR2
-		PUSH CX         ; Ya que en GRAFICAR se usan todos los registros
+		PUSH CX     
 			MOV COLOR1,00h
 			MOV COLOR2,00H
 			CALL DRAWING
@@ -522,12 +540,8 @@ DONTMOVE ENDP
 			MOV COLOR2,CH
 	RET
 	CLEAN ENDP
-
-
 CODE ENDS
-
 PILA SEGMENT STACK
-       DB 4000 DUP(?)
+       DB 9000 DUP(?)
 PILA ENDS
-
 END INICIO    
